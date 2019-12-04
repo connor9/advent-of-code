@@ -127,6 +127,7 @@ for test in tests:
     # print(line2)
 
     matches = []
+    # n^2 search - could improve with https://www.hackerearth.com/practice/math/geometry/line-intersection-using-bentley-ottmann-algorithm/tutorial/
     for i in range(0, len(line1)-1):
         for j in range(0, len(line2)-1):
             p1 = line1[i]
