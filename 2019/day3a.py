@@ -52,10 +52,10 @@
 # What is the Manhattan distance from the central port to the closest intersection?
 
 tests = [
-    ["R4,U8", "U4,R8", 8],
-    ["R8,U5,L5,D3", "U7,R6,D4,L4", 6],
-    ["R75,D30,R83,U83,L12,D49,R71,U7,L72", "U62,R66,U55,R34,D71,R55,D58,R83", 159],
-    ["R98,U47,R26,D63,R33,U87,L62,D20,R33,U53,R51", "U98,R91,D20,R16,D67,R40,U7,R15,U6,R7", 135]
+    ["R4,U8", "U4,R8", 8, 0],
+    ["R8,U5,L5,D3", "U7,R6,D4,L4", 6, 0],
+    ["R75,D30,R83,U83,L12,D49,R71,U7,L72", "U62,R66,U55,R34,D71,R55,D58,R83", 159, 610],
+    ["R98,U47,R26,D63,R33,U87,L62,D20,R33,U53,R51", "U98,R91,D20,R16,D67,R40,U7,R15,U6,R7", 135, 410]
 ]
 
 with open("day3.txt") as f:
@@ -64,7 +64,7 @@ with open("day3.txt") as f:
 
 tests.append([line1, line2, 0])
 
-print(tests)
+#print(tests)
 
 test = tests[0]
 
@@ -139,9 +139,9 @@ for test in tests:
             # print("Match", pint)
 
             if pint[0] is not None and pint[1] is not None:
-                distance = pint[0] + pint[1]
+                distance = abs(pint[0]) + abs(pint[1])
                 matches.append(distance)
-                print("Match", pint)
+                #print("Match", pint)
 
 
     tmp = [abs(m) for m in matches]
@@ -152,5 +152,67 @@ for test in tests:
     if check_value == closest_distance:
         print("Test pass!")
 
+#
+
+def convert_line_vectors_to_populated_grid(grid, max_size, line, check):
+    pos = (0, 0)
+
+    mid_point = int(max_size / 2)
+
+    for vec in line:
+       # print(vec)
+        direc = vec[0]
+        dist = int(vec[1:])
+
+        px = pos[0]
+        py = pos[1]
+
+        if direc == 'L' or direc == 'D':
+            dist = dist*-1
+
+        if direc == 'U' or direc == 'D':
+            py = py + dist
+        else:
+            px = px + dist
 
 
+        p = (px, py)
+        #print("pos->p", pos, p)
+
+        xstride = 1
+        if pos[0] > p[0]:
+            xstride = -1
+        ystride = 1
+        if pos[1] > p[1]:
+            ystride = -1
+
+        for x in range(pos[0], p[0]+xstride, xstride):
+            for y in range(pos[1], p[1]+ystride, ystride):
+                #print(x, y)
+                xpos = x + mid_point
+                ypos = ((max_size-1)-y)-mid_point
+                #print(xpos, ypos)
+                if(grid[ypos][xpos] == "1" and check == "2"):
+                    grid[ypos][xpos] = "X"
+                    print("cross:", x, y)
+                else:
+                    grid[ypos][xpos] = check
+
+        pos = p
+
+    grid[max_size-1-mid_point][mid_point] = 'o'
+    return grid
+
+
+test = tests[2]
+max_size = 480
+grid = [['.' for j in range(0, max_size)] for i in range(0, max_size)]
+
+grid1 = convert_line_vectors_to_populated_grid(grid, max_size, test[0].split(","), "1")
+grid2 = convert_line_vectors_to_populated_grid(grid, max_size, test[1].split(","), "2")
+# for row in grid1:
+#     print(row)
+
+with open("shape.txt","w") as f:
+    for row in grid1:
+        f.write("".join(row))
