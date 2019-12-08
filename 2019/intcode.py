@@ -49,10 +49,12 @@
 # What is the diagnostic code for system ID 5?
 #
 
+import queue
 
 OP_ADD = 1
 OP_MULT = 2
 OP_READ = 3
+OP_READ_AND_HALT = 33
 OP_PRINT = 4
 OP_JMP_IF_TRUE = 5
 OP_JMP_IF_FALSE = 6
@@ -76,11 +78,20 @@ def read_program(filename):
 
 
 class IntcodeComputer:
-    def __init__(self):
+    def __init__(self, inputs=None):
         self.instruction_counter = 0
         self.memory = []
 
         self.reset()
+
+        self.inputs = queue.Queue()
+        self.outputs = []
+
+        self.halted = False
+        self.paused = False
+
+        if inputs is not None:
+            self.inputs = list(inputs)
 
     def reset(self):
         self.instruction_counter = 0
@@ -88,6 +99,13 @@ class IntcodeComputer:
 
     def load_memory(self, memory):
         self.memory = list(memory)
+
+    def add_input(self, input):
+        # print("In:", input)
+        self.inputs.put(input)
+
+    def get_output(self):
+        return self.outputs.pop()
 
     def step(self):
         instruction = self.memory[self.instruction_counter]
@@ -159,9 +177,20 @@ class IntcodeComputer:
         elif opcode == OP_READ:
             parameter_count = 1
 
-            value = int(input())
-            reg = self.memory[self.instruction_counter + 1]
+            # if self.inputs is None:
+            #     value = int(input())
+            # else:
+            #     value = self.inputs[self.input_counter]
+            #     self.input_counter = self.input_counter + 1
+            #     print("Fake in:", value)
 
+            if self.inputs.qsize() == 0:
+                self.paused = True
+                return OP_READ_AND_HALT
+
+            value = self.inputs.get()
+
+            reg = self.memory[self.instruction_counter + 1]
             self.memory[reg] = value
 
         elif opcode == OP_PRINT:
@@ -173,9 +202,11 @@ class IntcodeComputer:
             else:
                 value = self.memory[reg]
 
+            self.outputs.append(value)
             print("Output:", value, "IC:", self.instruction_counter)
 
         elif opcode == OP_HALT:
+            self.halted = True
             return opcode
         else:
             print(opcode, self.instruction_counter)
@@ -188,28 +219,6 @@ class IntcodeComputer:
     def run(self):
         while True:
             opcode = self.step()
-            # print("Step:", opcode, self.instruction_counter, self.memory)
-            if opcode == 99:
+            print("Step:", opcode, self.instruction_counter, self.memory)
+            if opcode == OP_HALT or opcode == OP_READ_AND_HALT:
                 break
-
-if __name__ == '__main__':
-    tests = [
-        '3,9,8,9,10,9,4,9,99,-1,8',
-        '3,9,7,9,10,9,4,9,99,-1,8',
-        '3,3,1108,-1,8,3,4,3,99',
-        '3,3,1107,-1,8,3,4,3,99',
-        '3,12,6,12,15,1,13,14,13,4,13,99,-1,0,1,9',
-        '3,3,1105,-1,9,1101,0,0,12,4,12,99,1',
-        '3,21,1008,21,8,20,1005,20,22,107,8,21,20,1006,20,31,1106,0,36,98,0,0,1002,21,125,20,4,20,1105,1,46,104,999,1105,1,46,1101,1000,1,20,4,20,1105,1,46,98,99'
-    ]
-
-    instructions_data = parse_program(tests[6])
-    #instructions_data = read_program("day5.txt")
-
-    intcode = IntcodeComputer()
-    intcode.load_memory(instructions_data)
-    print(len(intcode.memory))
-    print("Start:", intcode.memory)
-    intcode.run()
-    print("Finish:", intcode.memory)
-
